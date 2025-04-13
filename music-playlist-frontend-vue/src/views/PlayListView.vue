@@ -1,10 +1,25 @@
 <template>
   <div class="playlist-wrapper">
     <div class="playlist-container">
-      <header class="playlist-header">
-        <h2 class="playlist-title">{{ playlist?.name || 'Untitled Playlist' }}</h2>
-        <button @click="goBack" class="back-btn">← Back</button>
-      </header>
+      <div class="playlist-card">
+        <div class="playlist-info">
+          <img
+            :src="getPlaylistThumbnail()"
+            alt="Playlist Thumbnail"
+            class="playlist-thumbnail"
+            @error="onImageError"
+          />
+          <div class="playlist-text">
+            <h2 class="playlist-name">{{ playlist?.name || 'Untitled Playlist' }}</h2>
+            <span class="song-count">{{ playlist?.songs?.length || 0 }} songs</span>
+          </div>
+        </div>
+        <div class="playlist-actions">
+          <button @click="goBack" class="btn-action back-btn">
+            <span class="btn-text">← Back</span>
+          </button>
+        </div>
+      </div>
 
       <section class="add-song-section">
         <h3 class="section-title">Add New Song</h3>
@@ -71,12 +86,20 @@
                 </button>
               </div>
             </div>
-            <div v-else class="song-details">
+            <div v-else class="song-card-content">
               <div class="song-info">
-                <strong class="song-title">{{ parseSongTitle(song.title, song.artist) }}</strong>
-                <span class="song-artist" v-if="parseSongArtist(song.title, song.artist)">
-                  ({{ parseSongArtist(song.title, song.artist) }})
-                </span>
+                <img
+                  :src="getSongThumbnail(song.url)"
+                  alt="Song Thumbnail"
+                  class="song-thumbnail"
+                  @error="onImageError"
+                />
+                <div class="song-text">
+                  <strong class="song-title">{{ parseSongTitle(song.title, song.artist) }}</strong>
+                  <span class="song-artist" v-if="parseSongArtist(song.title, song.artist)">
+                    ({{ parseSongArtist(song.title, song.artist) }})
+                  </span>
+                </div>
               </div>
               <div class="song-actions">
                 <a :href="song.url" target="_blank" class="btn-action play-link"
@@ -115,6 +138,8 @@
 import { onMounted, ref, computed, watch } from "vue";
 import axios from "axios";
 import { useRoute, useRouter } from "vue-router";
+
+const DEFAULT_THUMBNAIL = 'https://images.sftcdn.net/images/t_app-cover-m,f_auto/p/c0cab602-96bf-11e6-8561-00163ec9f5fa/1021633432/grand-theft-auto-vice-city-Playing-Grand-Theft-Auto-Vice-City-for-Windows.jpg';
 
 const parseSongTitle = (title, artist) => {
   if (!title) return '';
@@ -289,6 +314,32 @@ const goBack = () => {
   router.push("/");
 };
 
+const getPlaylistThumbnail = () => {
+  if (!playlist.value?.songs || playlist.value.songs.length === 0) return DEFAULT_THUMBNAIL;
+  const firstSong = playlist.value.songs[0];
+  if (firstSong.url) {
+    const youtubeMatch = firstSong.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+    if (youtubeMatch && youtubeMatch[1]) {
+      return `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
+    }
+  }
+  return DEFAULT_THUMBNAIL;
+};
+
+const getSongThumbnail = (url) => {
+  if (url) {
+    const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+    if (youtubeMatch && youtubeMatch[1]) {
+      return `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
+    }
+  }
+  return DEFAULT_THUMBNAIL;
+};
+
+const onImageError = (event) => {
+  event.target.src = DEFAULT_THUMBNAIL;
+};
+
 watch(showConfirmation, (newValue) => {
   console.log("Confirmation state changed to:", newValue);
 });
@@ -310,16 +361,9 @@ onMounted(fetchPlaylist);
   min-height: 100vh;
   width: 100vw;
   background: #0a0a12;
-  background-image: radial-gradient(
-      circle at 10% 20%,
-      rgba(138, 43, 226, 0.15) 0%,
-      transparent 20%
-    ),
-    radial-gradient(
-      circle at 90% 80%,
-      rgba(170, 0, 255, 0.1) 0%,
-      transparent 30%
-    );
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(170, 0, 255, 0.1) 0%, transparent 30%);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -334,51 +378,94 @@ onMounted(fetchPlaylist);
   max-width: 900px;
   padding: 2rem;
   background: rgba(16, 16, 24, 0.6);
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(138, 43, 226, 0.1);
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .playlist-container:hover {
-  box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+  box-shadow: 0 0 25px rgba(138, 43, 226, 0.4);
   transform: translateY(-2px);
 }
 
-.playlist-header {
+.playlist-card {
+  background: rgba(18, 18, 24, 0.9);
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+  padding: 2.5rem;
+  min-height: 150px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2.5rem;
 }
 
-.playlist-title {
-  font-size: 2.5rem;
+.playlist-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
+}
+
+.playlist-info {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.playlist-thumbnail {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 10px;
+  background-color: #1a1a2e;
+  border: 3px solid rgba(138, 43, 226, 0.4);
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+  transition: transform 0.3s;
+}
+
+.playlist-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.playlist-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.playlist-name {
+  font-size: 1.6rem;
   font-weight: 700;
-  background: linear-gradient(45deg, #8a2be2, #ff00ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
   margin: 0;
-  line-height: 1.2;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  color: #ffffff;
+  text-shadow: 0 0 5px rgba(138, 43, 226, 0.3);
+}
+
+.song-count {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.playlist-actions {
+  display: flex;
+  gap: 1rem;
 }
 
 .back-btn {
-  padding: 0.6rem 1.5rem;
-  background: rgba(255, 51, 102, 0.8);
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
+  padding: 0.9rem 1.8rem;
+  background: rgba(255, 51, 102, 0.2);
+  color: #ff3366;
+  border: 1px solid rgba(255, 51, 102, 0.5);
 }
 
 .back-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+  box-shadow: 0 5px 20px rgba(255, 51, 102, 0.5);
 }
 
 .section-title {
@@ -470,41 +557,60 @@ onMounted(fetchPlaylist);
   list-style: none;
   padding: 0;
   display: grid;
-  gap: 1.5rem;
+  gap: 2rem;
   max-height: 60vh;
   overflow-y: auto;
 }
 
 .song-card {
   background: rgba(18, 18, 24, 0.9);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s, box-shadow 0.3s;
-  min-height: 120px;
+  min-height: 150px;
 }
 
 .song-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
 }
 
-.song-details {
+.song-card-content {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; 
-  overflow: hidden;
-  padding: 0.5rem 0;
+  gap: 1rem;
+  height: 100%;
 }
 
 .song-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.song-thumbnail {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+  background-color: #1a1a2e;
+  border: 3px solid rgba(138, 43, 226, 0.4);
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+  transition: transform 0.3s;
+}
+
+.song-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.song-text {
   flex: 1;
   display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 0.25rem; /* Space between title and artist */
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .song-title {
@@ -515,6 +621,7 @@ onMounted(fetchPlaylist);
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  text-shadow: 0 0 5px rgba(138, 43, 226, 0.3);
 }
 
 .song-artist {
@@ -529,60 +636,67 @@ onMounted(fetchPlaylist);
 .song-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .btn-action {
-  padding: 0.6rem 1rem;
+  padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  border-radius: 14px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(138, 43, 226, 0.4);
 }
 
 .play-link {
-  background: rgba(0, 180, 219, 0.15);
+  background: rgba(0, 180, 219, 0.2);
   color: #00b4db;
-  border: 1px solid rgba(0, 180, 219, 0.3);
+  border: 1px solid rgba(0, 180, 219, 0.5);
   text-decoration: none;
 }
 
 .play-link:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 180, 219, 0.4);
+  box-shadow: 0 5px 20px rgba(0, 180, 219, 0.5);
 }
 
 .btn-edit {
-  background: rgba(0, 180, 219, 0.15);
+  background: rgba(0, 180, 219, 0.2);
   color: #00b4db;
-  border: 1px solid rgba(0, 180, 219, 0.3);
+  border: 1px solid rgba(0, 180, 219, 0.5);
 }
 
 .btn-edit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 180, 219, 0.4);
+  box-shadow: 0 5px 20px rgba(0, 180, 219, 0.5);
 }
 
 .btn-delete {
-  background: rgba(255, 51, 102, 0.15);
+  background: rgba(255, 51, 102, 0.2);
   color: #ff3366;
-  border: 1px solid rgba(255, 51, 102, 0.3);
+  border: 1px solid rgba(255, 51, 102, 0.5);
 }
 
 .btn-delete:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+  box-shadow: 0 5px 20px rgba(255, 51, 102, 0.5);
 }
 
 .edit-form-container {
   width: 100%;
   background: rgba(24, 24, 32, 0.9);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 1.5rem;
   border: 1px solid rgba(138, 43, 226, 0.2);
 }
@@ -623,14 +737,14 @@ onMounted(fetchPlaylist);
 }
 
 .btn-save {
-  background: rgba(0, 230, 118, 0.15);
+  background: rgba(0, 230, 118, 0.2);
   color: #00e676;
-  border: 1px solid rgba(0, 230, 118, 0.3);
+  border: 1px solid rgba(0, 230, 118, 0.5);
 }
 
 .btn-save:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
+  box-shadow: 0 5px 20px rgba(0, 230, 118, 0.5);
 }
 
 .btn-cancel {
@@ -640,7 +754,7 @@ onMounted(fetchPlaylist);
 
 .btn-cancel:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 5px 20px rgba(255, 255, 255, 0.2);
 }
 
 .no-songs {
@@ -707,17 +821,31 @@ onMounted(fetchPlaylist);
 
 /* Animations */
 @keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (min-width: 768px) {
+  .playlist-card {
+    min-height: 180px;
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
+
+  .playlist-thumbnail {
+    width: 120px;
+    height: 120px;
+  }
+
+  .song-thumbnail {
+    width: 100px;
+    height: 100px;
+  }
+
+  .song-card {
+    min-height: 180px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .playlist-header {
     flex-direction: column;
     gap: 1.5rem;
@@ -741,15 +869,36 @@ onMounted(fetchPlaylist);
     width: 100%;
   }
 
+  .playlist-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
+
+  .playlist-actions {
+    width: 100%;
+  }
+
+  .back-btn {
+    width: 100%;
+  }
+
   .song-card {
     flex-direction: column;
     align-items: stretch;
     gap: 1.5rem;
   }
 
-  .song-details {
+  .song-info {
     flex-direction: column;
-    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .song-thumbnail {
+    width: 100%;
+    height: auto;
+    max-width: 150px;
   }
 
   .song-actions {
