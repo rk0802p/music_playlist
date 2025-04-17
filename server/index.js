@@ -7,15 +7,28 @@ const authRoutes = require("./routes/auth");
 const protectedRoutes = require("./routes/protected");
 const playlistRoutes = require("./routes/playlist");
 
+const app = express();
 
-const app = express(); 
+// Configure CORS
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : 'http://localhost:8080',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api/protected", protectedRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/playlists", playlistRoutes);
 
+// Add a simple health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 mongoose
   .connect(process.env.MONGO_URI)
