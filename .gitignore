@@ -1,0 +1,4 @@
+music-playlist-frontend-vue/node_modules
+server/node_modules
+server/.env
+music-playlist-frontend-vue/.env
