@@ -20,7 +20,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2015',
-    minify: 'terser',
+    minify: 'esbuild', // Use esbuild instead of terser for better compatibility
     cssMinify: true,
     rollupOptions: {
       output: {
@@ -31,11 +31,9 @@ export default defineConfig({
         }
       }
     },
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
+    // Remove terser options since we're using esbuild
+    esbuild: {
+      drop: ['console', 'debugger']
     }
   },
   server: {
