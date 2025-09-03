@@ -16,6 +16,31 @@ export default defineConfig({
     extensions: ['.js', '.ts', '.vue', '.json']
   },
   optimizeDeps: {
-    include: ['jwt-decode']
+    include: ['jwt-decode', 'vue', 'vue-router', 'pinia']
+  },
+  build: {
+    target: 'es2015',
+    minify: 'terser',
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'axios': ['axios'],
+          'utils': ['jwt-decode']
+        }
+      }
+    },
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
+  },
+  server: {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000'
+    }
   }
 });
